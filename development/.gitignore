@@ -1,0 +1,13 @@
+# Never commit actual secrets
+secrets.yaml
+*-secrets.yaml
+*.jks
+*.p12
+*.pem
+*.key
+
+# Logs
+*.log
+
+# OS
+.DS_Store

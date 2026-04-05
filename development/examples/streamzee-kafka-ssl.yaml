@@ -1,0 +1,36 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Example: Streamzee Kafka SSL (mTLS) — no SASL
+#
+# Based on the client's existing Flink config:
+#   security.protocol: SSL
+#   ssl.truststore.location: /opt/certs/kafka-truststore.jks
+#   ssl.keystore.location: /opt/certs/kafka-keystore.jks
+#   ssl.truststore.password: ${KAFKA_TRUSTSTORE_PASSWORD}
+#   ssl.keystore.password: ${KAFKA_KEYSTORE_PASSWORD}
+# ═══════════════════════════════════════════════════════════════════════════
+
+targeting:
+  labels:
+    system: ververica-platform
+
+envVars:
+  - name: KAFKA_TRUSTSTORE_PASSWORD
+    secret: kafka-credentials
+    key: truststore_password
+
+  - name: KAFKA_KEYSTORE_PASSWORD
+    secret: kafka-credentials
+    key: keystore_password
+
+volumes:
+  - name: kafka-certs
+    type: secret
+    source: kafka-tls-stores
+    mountPath: /opt/certs
+    readOnly: true
+
+  - name: job-config
+    type: secret
+    source: job-config
+    mountPath: /opt/flink/job-config
+    readOnly: true

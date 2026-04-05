@@ -1,0 +1,86 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Example: Full kitchen sink — Kafka + DB + custom config + logging + initContainer
+# Shows all capabilities of the injector.
+# ═══════════════════════════════════════════════════════════════════════════
+
+targeting:
+  labels:
+    system: ververica-platform
+
+envVars:
+  # Kafka SASL
+  - name: KAFKA_SASL_USERNAME
+    secret: kafka-credentials
+    key: username
+  - name: KAFKA_SASL_PASSWORD
+    secret: kafka-credentials
+    key: password
+  - name: KAFKA_TRUSTSTORE_PASSWORD
+    secret: kafka-credentials
+    key: truststore_password
+  - name: KAFKA_KEYSTORE_PASSWORD
+    secret: kafka-credentials
+    key: keystore_password
+
+  # Database
+  - name: DB_PASSWORD
+    secret: database-credentials
+    key: password
+  - name: DB_CONNECTION_STRING
+    secret: database-credentials
+    key: connection_string
+
+  # External API
+  - name: ENRICHMENT_API_KEY
+    secret: api-keys
+    key: enrichment_api_key
+
+volumes:
+  # Kafka TLS stores
+  - name: kafka-certs
+    type: secret
+    source: kafka-tls-stores
+    mountPath: /opt/flink/kafka-certs
+    readOnly: true
+
+  # Job configuration
+  - name: job-config
+    type: secret
+    source: job-config-files
+    mountPath: /opt/flink/job-config
+    readOnly: true
+
+  # Custom Flink configuration overrides
+  - name: flink-conf
+    type: configmap
+    source: flink-config-overrides
+    mountPath: /opt/flink/conf-custom
+    readOnly: true
+
+  # Custom logging
+  - name: logging
+    type: configmap
+    source: flink-log4j-config
+    mountPath: /opt/flink/log-config
+    readOnly: true
+
+# InitContainer that processes certs before Flink starts
+initContainers:
+  - name: cert-processor
+    image: eclipse-temurin:11-jdk-alpine
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        echo "Merging CA certificates into truststore..."
+        cp /opt/flink/kafka-certs/truststore.jks /work/truststore.jks
+        keytool -importkeystore \
+          -srckeystore /opt/flink/kafka-certs/truststore.jks \
+          -srcstorepass $STORE_PASS \
+          -destkeystore /work/merged-truststore.jks \
+          -deststorepass $STORE_PASS -noprompt
+        echo "Done."
+    mounts: [kafka-certs]
+    env:
+      - name: STORE_PASS
+        secret: kafka-credentials
+        key: truststore_password

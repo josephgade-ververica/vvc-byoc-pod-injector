@@ -1,0 +1,31 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Example: Kafka SASL_PLAIN + SSL (username/password + TLS)
+# ═══════════════════════════════════════════════════════════════════════════
+
+targeting:
+  labels:
+    system: ververica-platform
+
+envVars:
+  - name: KAFKA_SASL_USERNAME
+    secret: kafka-credentials
+    key: username
+
+  - name: KAFKA_SASL_PASSWORD
+    secret: kafka-credentials
+    key: password
+
+  - name: KAFKA_TRUSTSTORE_PASSWORD
+    secret: kafka-credentials
+    key: truststore_password
+
+  - name: KAFKA_KEYSTORE_PASSWORD
+    secret: kafka-credentials
+    key: keystore_password
+
+volumes:
+  - name: kafka-certs
+    type: secret
+    source: kafka-tls-stores
+    mountPath: /opt/flink/kafka-certs
+    readOnly: true

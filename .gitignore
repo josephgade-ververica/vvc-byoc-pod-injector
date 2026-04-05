@@ -1,0 +1,26 @@
+# Docker image tarballs (large binary files)
+*.tar
+
+# Customer secrets (never commit)
+distribution/secrets.yaml
+distribution/*.jks
+distribution/*.pem
+distribution/*.key
+distribution/*.cert
+distribution/*.p12
+
+# Test artifacts
+test/
+
+# Build output
+customer-delivery.zip
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/

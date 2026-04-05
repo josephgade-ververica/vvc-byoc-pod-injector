@@ -1,0 +1,93 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# injection-config.yaml — VVC BYOC Pod Injector Configuration
+#
+# This file defines WHAT gets injected into Flink pods.
+# Edit this file to add/remove env vars, volumes, and initContainers.
+# No code changes or image rebuilds needed.
+#
+# After editing, apply with:
+#   ./vvc-byoc-pod-injector.sh deploy --config injection-config.yaml ...
+#   or
+#   ./vvc-byoc-pod-injector.sh add --config injection-config.yaml --namespace <ns>
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Which pods to inject into (matched against pod labels)
+# Confirmed on VVC BYOC (AWS + Azure): all Flink pods have system=ververica-platform
+targeting:
+  labels:
+    system: ververica-platform
+
+# Environment variables injected into every container in the pod.
+# Each entry references a key within a Kubernetes Secret.
+# The Secret must exist in the same namespace as the Flink pods.
+envVars:
+  - name: KAFKA_TRUSTSTORE_PASSWORD
+    secret: kafka-credentials
+    key: truststore_password
+
+  - name: KAFKA_KEYSTORE_PASSWORD
+    secret: kafka-credentials
+    key: keystore_password
+
+  # Uncomment if using SASL authentication:
+  # - name: KAFKA_SASL_USERNAME
+  #   secret: kafka-credentials
+  #   key: username
+
+  # - name: KAFKA_SASL_PASSWORD
+  #   secret: kafka-credentials
+  #   key: password
+
+  # Add more env vars as needed:
+  # - name: DB_PASSWORD
+  #   secret: database-credentials
+  #   key: password
+
+# Volumes mounted into every container in the pod.
+# type: "secret" = from a K8s Secret, "configmap" = from a K8s ConfigMap
+# source: name of the Secret or ConfigMap
+# mountPath: where to mount inside the container
+volumes:
+  - name: kafka-certs
+    type: secret
+    source: kafka-tls-stores
+    mountPath: /opt/flink/kafka-certs
+    readOnly: true
+
+  # Uncomment to mount a job spec file:
+  # - name: job-spec
+  #   type: secret
+  #   source: kafka-job-spec
+  #   mountPath: /opt/flink/job-spec
+  #   readOnly: true
+
+  # Uncomment to mount custom Flink config:
+  # - name: flink-conf
+  #   type: configmap
+  #   source: flink-custom-config
+  #   mountPath: /opt/flink/conf-override
+  #   readOnly: true
+
+  # Uncomment to mount logging config:
+  # - name: log4j
+  #   type: configmap
+  #   source: flink-log4j
+  #   mountPath: /opt/flink/log
+  #   readOnly: true
+
+# Optional: initContainers that run before the Flink process starts.
+# Use for cert processing, file downloads, vault fetches, etc.
+# initContainers:
+#   - name: cert-processor
+#     image: eclipse-temurin:11-jdk-alpine
+#     command: ["/bin/sh", "-c"]
+#     args:
+#       - |
+#         echo "Processing certs..."
+#         cp /opt/flink/kafka-certs/* /work/
+#         keytool -importkeystore ...
+#     mounts: [kafka-certs]    # references volume names above
+#     env:
+#       - name: STORE_PASS
+#         secret: kafka-credentials
+#         key: truststore_password
